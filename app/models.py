@@ -1,12 +1,14 @@
 from . import db
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
+from . import login_manager
 
-
-class Role(db.Model):
+class Role(UserMixin, db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
     users = db.relationship('User', backref='role')
+    email = db.Column(db.String(64), unique=True, index=True)
 
     def __repr__(self):
         return '<Role %r>' % self.name
@@ -40,3 +42,14 @@ class User(db.Model):
 
     def __repr__(self):
         return '<User %r>' % self.username
+
+
+@login_manager.user_loader
+def user_loader(user_id):
+    """
+    Flask-Login requires the application to set up a callback function
+    that loads a user, given the identifier.
+
+    """
+    return User.query.get(int(user_id))
+
