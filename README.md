@@ -8,13 +8,15 @@ This is basic project using bluiprints that has a lot of boring boilerplate buil
   - flask_script for shell interaction
   - flask_moment for frontend dates
   - flask_bootsrap as frontend framework
+  - flask_migrate for alembic migrations
   
  - following models are implemented:
    - user
    - role
 
-- following functionality is enabled:
+- following app functionality is implemented:
   - authentication
+
   
 
 ### Getting started
