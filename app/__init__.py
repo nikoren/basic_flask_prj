@@ -4,13 +4,15 @@ from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from config import config
 from flask_login import LoginManager
+
 login_manager = LoginManager()
 login_manager.session_protection = 'strong'
 login_manager.login_view = 'auth_bp.login'
 
-
 bootstrap = Bootstrap()
+
 manager = Manager()
+
 db = SQLAlchemy()
 
 
@@ -26,8 +28,8 @@ def create_app(config_name):
     # mail.init_app(app)
 
     # Attach routes and custom errors here
-    from main import main_blueprint
-    app.register_blueprint(main_blueprint)
+    from main_bp import main_bp
+    app.register_blueprint(main_bp)
 
     from auth_bp import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
