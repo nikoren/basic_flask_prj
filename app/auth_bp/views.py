@@ -2,7 +2,27 @@ from flask import render_template, redirect, request, url_for, flash
 from flask_login import logout_user, login_required, login_user
 from . import auth_bp
 from ..models import User
-from .forms import LoginForm
+from .forms import LoginForm,RegistrationForm
+from .. import db
+
+
+@auth_bp.route('/register', methods=['GET','POST'])
+def register():
+    registration_form = RegistrationForm()
+
+    # if POST
+    if registration_form.validate_on_submit():
+        user = User(username=registration_form.username.data,
+                    email=registration_form.email.data,
+                    password=registration_form.password.data)
+        db.session.add(user)
+        # db.session.commit() # We might be don't need to commit the session as flask does it for use for each request
+
+        # we should have only one place to login users, don't login from register
+        return redirect(url_for('auth_bp.login'))
+
+    # if GET
+    return render_template('auth_bp/register.html', registration_form=registration_form)
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
@@ -25,7 +45,7 @@ def login():
             # If the login form was presented to the user to prevent unauthorized access to a protected URL,
             # then Flask-Login saved the original URL in the next query string argument,
             # which can be accessed from the request.args dictionary.
-            return redirect(request.args.get('next') or url_for('main.index'))
+            return redirect(request.args.get('next') or url_for('main_bp.index'))
 
         flash('Invalid username or password.', category='danger')
 
@@ -38,4 +58,4 @@ def login():
 def logout():
     logout_user()
     flash('You have been logged out.', category='warning')
-    return redirect(url_for('main.index'))
+    return redirect(url_for('main_bp.index'))
