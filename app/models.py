@@ -2,6 +2,8 @@ from . import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from . import login_manager
+from itsdangerous import TimedJSONWebSignatureSerializer
+from flask import current_app
 
 class Role(UserMixin, db.Model):
     __tablename__ = 'roles'
@@ -21,6 +23,7 @@ class User(UserMixin, db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     password_hash = db.Column(db.String(128))
     email = db.Column(db.String(64), unique=True, index=True)
+    confirmed = db.Column(db.Boolean(), default=False)
 
     @property
     def password(self):
@@ -39,6 +42,26 @@ class User(UserMixin, db.Model):
 
     def password_is_correct(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def generate_token(self, expiration=3600):
+        s = TimedJSONWebSignatureSerializer(current_app.config['SECRET_KEY'], expires_in=expiration)
+        token = s.dumps({'id': self.id})
+        return token
+
+    def is_valid_token(self,token):
+        s = TimedJSONWebSignatureSerializer(current_app.config['SECRET_KEY'])
+
+        try:
+            token = s.loads(token)
+        except Exception:
+            return False
+
+        if token.get('id') == self.id:
+            self.confirmed = True
+            db.session.add(self)
+            return True
+
+        return False
 
 
     def __repr__(self):
