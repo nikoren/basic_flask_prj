@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
-{% block title %}Flasky{% endblock %}
+{% block title %}{{ config.PROJECT_NAME }} {% endblock title %}
 {% block page_content %}
-    <div class="page-header">
+    <div class="page-header"
 
         <h3>Hello,
             {% if current_user.is_authenticated %}
@@ -14,4 +14,4 @@
         </h3>
 
     </div>
-{% endblock %}
+{% endblock page_content %}

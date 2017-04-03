@@ -12,7 +12,6 @@ def index():
 
 
 @main_bp.route('/clear_session/<value>')
-@login_required
 def clear_session(value='all'):
     if value != 'all':
         if value in session.keys():

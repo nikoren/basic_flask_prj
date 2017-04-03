@@ -43,26 +43,28 @@ class User(UserMixin, db.Model):
     def password_is_correct(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def generate_token(self, expiration=3600):
+    def generate_confirmation_token(self, expiration=3600):
         s = TimedJSONWebSignatureSerializer(current_app.config['SECRET_KEY'], expires_in=expiration)
         token = s.dumps({'id': self.id})
         return token
 
-    def is_valid_token(self,token):
+    def confirm_valid_token(self, token):
         s = TimedJSONWebSignatureSerializer(current_app.config['SECRET_KEY'])
-
         try:
             token = s.loads(token)
+            current_app.logger.debug('Token loaded: {}'.format(token))
         except Exception:
+            current_app.logger.exception("Couldn't load the token")
             return False
 
         if token.get('id') == self.id:
+            current_app.logger.debug('Token id match users id')
             self.confirmed = True
             db.session.add(self)
+            current_app.logger.debug('User {} confirmed'.format(self))
             return True
-
+        current_app.logger.warning("Token {} doesnt't match 'id:{}'".format(token, self.id))
         return False
-
 
     def __repr__(self):
         return '<User %r>' % self.username
