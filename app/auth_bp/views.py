@@ -1,4 +1,4 @@
-from flask import render_template, redirect, request, url_for, flash
+from flask import render_template, redirect, request, url_for, flash, current_app
 from flask_login import logout_user, login_required, login_user, current_user
 from . import auth_bp
 from ..models import User
@@ -14,11 +14,13 @@ def before_request():
     This is happenining before each request, so attempts to access any other then
     auth content is intercepted and redirected to confirmation url
     '''
+    current_app.logger.debug(
+        "Current user {} requesting endpoint {}".format(current_user, request.endpoint))
 
     if current_user.is_authenticated \
             and not current_user.confirmed \
             and request.endpoint  \
-            and request.endpoint[:5] != 'auth_bp.' \
+            and not request.endpoint.startswith('auth_bp') \
             and request.endpoint != 'static':
         return redirect(url_for('auth_bp.unconfirmed'))
 
@@ -97,7 +99,7 @@ def confirm(token):
     so that when the users click on the link from the confirmation email
     they are asked to log in before they reach this view function.
     '''
-    current_user.logger.debug('Starting to confirm {} account'.format(current_user))
+    print 'Confirming {}'.format(token)
     if current_user.confirmed:
         # User has already finish email confirmation
         return redirect(url_for('main_bp.index'))
