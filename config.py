@@ -8,8 +8,21 @@ class Config(object):
     MAIL_SUBJECT_PREFIX = '[{}]'.format(PROJECT_NAME)
     MAIL_SENDER = '{} Admin'.format(PROJECT_NAME)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    ADMIN = os.environ.get('{}_ADMIN'.format(PROJECT_NAME)) or 'nikoren@gmail.com'
-
+    ADMINS = os.environ.get('{}_ADMINS'.format(PROJECT_NAME)) or ['nikoren@gmail.com',]
+    PERMISSIONS = [
+        {
+            'name': 'admin_access',
+            'description': 'Provides access to following actions: All actions'
+        },
+    ]
+    ROLES = [
+        {
+            'name': 'Admin',
+            'description': 'Role assigned to site administrator and provides full access to all features',
+            'permissions_names': ['admin_access'],
+            'is_default': False
+        },
+    ]
 
     @staticmethod
     def init_app(app):
