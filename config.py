@@ -14,6 +14,10 @@ class Config(object):
             'name': 'admin_access',
             'description': 'Provides access to following actions: All actions'
         },
+        {
+            'name': 'read',
+            'description': 'Provides basic access to read the information'
+        }
     ]
     ROLES = [
         {
@@ -22,6 +26,11 @@ class Config(object):
             'permissions_names': ['admin_access'],
             'is_default': False
         },
+        {
+            'name': 'User',
+            'description': 'Default roole assigned to basic user',
+            'permissions_name': ['read']
+        }
     ]
 
     @staticmethod
