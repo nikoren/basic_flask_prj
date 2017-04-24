@@ -11,7 +11,7 @@ class Config(object):
     ADMINS = os.environ.get('{}_ADMINS'.format(PROJECT_NAME)) or ['nikoren@gmail.com',]
     PERMISSIONS = [
         {
-            'name': 'admin_access',
+            'name': 'admin',
             'description': 'Provides access to following actions: All actions'
         },
         {
@@ -29,7 +29,8 @@ class Config(object):
         {
             'name': 'User',
             'description': 'Default roole assigned to basic user',
-            'permissions_name': ['read']
+            'permissions_name': ['read'],
+            'is_default': True
         }
     ]
 
