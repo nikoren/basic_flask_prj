@@ -1,13 +1,27 @@
 from . import db
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import UserMixin
+from flask_login import UserMixin, AnonymousUserMixin
 from . import login_manager
 from itsdangerous import TimedJSONWebSignatureSerializer
 from flask import current_app
 from sqlalchemy.orm.exc import NoResultFound
 
 
+class AnonymousUser(AnonymousUserMixin):
+    '''
+    Class that is registered as the class of the object
+    that is assigned to current_user when the user is not logged in
+    '''
+
+    def can(self, permissions):
+        return False
+
+    def is_admin(self):
+        return False
+
 class User(UserMixin, db.Model):
+
+
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, index=True)
@@ -15,7 +29,17 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     email = db.Column(db.String(64), unique=True, index=True)
     confirmed = db.Column(db.Boolean(), default=False)
-    roles = db.relationship('Role', back_populates='users')
+    role = db.relationship('Role', back_populates='users')
+
+    def __init__(self, **kwargs):
+        super(User, self).__init__(**kwargs)
+
+        # Role assignment when user created
+        if self.role is None:
+            if self.email in current_app.config['ADMINS']:
+                self.role = Role.query.filter_by(name='Admin').first()
+            if self.role is None:
+                self.role = Role.query.filter_by(default=True).first()
 
     @property
     def password(self):
@@ -57,6 +81,23 @@ class User(UserMixin, db.Model):
             return True
         current_app.logger.warning("Token {} doesnt't match 'id:{}'".format(token, self.id))
         return False
+
+    def can(self, permissions):
+        '''
+        Check if all the permissions are allowed for current user
+        :param permissions: List of permissions
+        :return: Boolean status
+        '''
+
+        for permission in permissions:
+            if permission.name not in \
+                    [p.name for p in self.role.permissions]:
+                return False
+        return True
+
+    def is_admin(self):
+        if self.role.name == 'Admin':
+            return True
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -131,7 +172,6 @@ class Role(db.Model):
     description = db.Column(db.String(1024), nullable=True)
     # based on this attribute default role can be set to new users
     is_default = db.Column(db.Boolean, default=False, index=True)
-
     # many-to-many Roles<->Permissions
     permissions = db.relationship(
         'Permission',
@@ -141,7 +181,7 @@ class Role(db.Model):
     # one-to-many Role -> Users
     users = db.relationship(
         'User',
-        back_populates='roles',
+        back_populates='role',
         lazy='dynamic')
 
     @staticmethod
