@@ -23,13 +23,13 @@ class Config(object):
         {
             'name': 'Admin',
             'description': 'Role assigned to site administrator and provides full access to all features',
-            'permissions_names': ['admin_access'],
+            'permissions': ['admin_access'],
             'is_default': False
         },
         {
             'name': 'User',
             'description': 'Default roole assigned to basic user',
-            'permissions_name': ['read'],
+            'permissions': ['read'],
             'is_default': True
         }
     ]
@@ -47,7 +47,7 @@ class DevelopmentConfig(Config):
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD') or 'safari11safari@'
     # SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
     #                           'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
-    SQLALCHEMY_DATABASE_URI = 'postgresql://localhost/{}'.format(Config.PROJECT_NAME)
+    SQLALCHEMY_DATABASE_URI = 'postgresql://localhost/{}'.format(Config.PROJECT_NAME.lower())
 
 class TestingConfig(Config):
     TESTING = True

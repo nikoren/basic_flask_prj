@@ -1,4 +1,5 @@
 from . import db
+import sys
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin, AnonymousUserMixin
 from . import login_manager
@@ -157,9 +158,14 @@ class Permission(db.Model):
                 and cfg_permission.get('description') != db_permission.description ):
                 db_permission.description = cfg_permission['description']
 
-
+            current_app.logger.debug('Adding {} permission'.format(db_permission.name))
             db.session.merge(db_permission)
+
+        current_app.logger.debug('finished adding all permissions')
         db.session.commit()
+
+    def __repr__(self):
+        return 'Permission <{}>'.format(self.name)
 
 
 class Role(db.Model):
@@ -186,9 +192,9 @@ class Role(db.Model):
 
     @staticmethod
     def insert_roles():
-
         Permission.insert_permissions()
         for cfg_role in current_app.config['ROLES']:
+            current_app.logger.debug('adding role {}'.format(cfg_role['name']))
             try:
                 db_role = Role.query.filter_by(name=cfg_role.get('name')).one()
             except NoResultFound:
@@ -197,9 +203,20 @@ class Role(db.Model):
                     description = cfg_role.get('description')
                 )
 
-            for attr in cfg_role.keys():
-                if getattr(db_role, attr) != cfg_role.get(attr):
-                    setattr(db_role, attr, cfg_role.get(attr))
+            for cfg_attr in cfg_role.keys():
+                current_app.logger.debug('cfg_attr is {}'.format(cfg_attr))
+                if not cfg_attr.startswith('_'):
+                    if getattr(db_role, cfg_attr) != cfg_role.get(cfg_attr):
+                        if cfg_attr == 'permissions':
+                            try:
+
+                                for cfg_permission in cfg_role['permissions']:
+                                    db_role.permissions.extend(Permission.query.filter_by(name=cfg_permission).all())
+                            except NoResultFound as e:
+                                current_app.logger.exception('Failed on permission {} '.format(cfg_permission))
+                                sys.exit()
+                        else:
+                            setattr(db_role, cfg_attr, cfg_role.get(cfg_attr))
 
             db.session.merge(db_role)
 
