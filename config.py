@@ -23,7 +23,7 @@ class Config(object):
         {
             'name': 'Admin',
             'description': 'Role assigned to site administrator and provides full access to all features',
-            'permissions': ['admin_access'],
+            'permissions': ['admin', 'read'],
             'is_default': False
         },
         {
@@ -48,6 +48,7 @@ class DevelopmentConfig(Config):
     # SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
     #                           'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
     SQLALCHEMY_DATABASE_URI = 'postgresql://localhost/{}'.format(Config.PROJECT_NAME.lower())
+
 
 class TestingConfig(Config):
     TESTING = True
