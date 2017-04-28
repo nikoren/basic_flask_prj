@@ -91,6 +91,12 @@ class User(UserMixin, db.Model):
         '''
 
         for permission in permissions:
+            if isinstance(permission, str):
+                try:
+                    permission = Permission.query.filter_by(name=permission).one()
+                except NoResultFound as e:
+                    current_app.logger.debug('No such permission {}, exiting'.format(permission))
+                    return False
             if permission.name not in \
                     [p.name for p in self.role.permissions]:
                 return False
