@@ -20,9 +20,8 @@ class AnonymousUser(AnonymousUserMixin):
     def is_admin(self):
         return False
 
+
 class User(UserMixin, db.Model):
-
-
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, index=True)
@@ -41,6 +40,48 @@ class User(UserMixin, db.Model):
                 self.role = Role.query.filter_by(name='Admin').first()
             if self.role is None:
                 self.role = Role.query.filter_by(default=True).first()
+
+    @staticmethod
+    def insert_cfg_users():
+
+        # Make sure roles are populated
+        Role.insert_cfg_roles()
+
+        for cfg_user in current_app.config['USERS']:
+
+            try:
+                db_role = Role.query.filter_by(name=cfg_user['role']).one()
+            except NoResultFound as e:
+                current_app.logger.exception(
+                    'Could not add User {}, no such role in DB {}'.format(
+                        cfg_user['name'], cfg_user['role']))
+                raise
+
+            # Role is in DB - otherwise can't get here
+            try:
+                db_user = User.query.filter_by(username=cfg_user['username']).one()
+            except NoResultFound:
+                current_app.logger.debug(
+                    'User {} is not in DB - creating it with {} and role {}'.format(
+                        cfg_user['username'], cfg_user, db_role))
+                db_user = User(
+                    username=cfg_user['username'],
+                    email=cfg_user['email'],
+                    role=db_role,
+                    confirmed=cfg_user['confirmed']
+                )
+
+            # User in DB - update it per need
+            for cfg_att_name in cfg_user.keys():
+                if not (cfg_att_name.startswith('_') or
+                        cfg_att_name == 'role'):
+                    setattr(db_user, cfg_att_name, cfg_user[cfg_att_name])
+
+            db_user.role = db_role
+            db_user.password = cfg_user['password']
+            db.session.merge(db_user)
+
+        db.session.commit()
 
     @property
     def password(self):
@@ -120,7 +161,6 @@ def user_loader(user_id):
     return User.query.get(int(user_id))
 
 
-
 # Association table for use<->role many-to-many relationship
 permissions_in_role = db.Table(
     'permissions_in_role',
@@ -146,7 +186,7 @@ class Permission(db.Model):
     )
 
     @staticmethod
-    def insert_permissions():
+    def insert_cfg_permissions():
         cfg_permissions = current_app.config['PERMISSIONS']
         # Add missing permissions
         for cfg_permission in cfg_permissions:
@@ -161,7 +201,7 @@ class Permission(db.Model):
             if db_permission.name != cfg_permission['name']:
                 db_permission.name = cfg_permission['name']
             if (cfg_permission.get('description') is not None
-                and cfg_permission.get('description') != db_permission.description ):
+                and cfg_permission.get('description') != db_permission.description):
                 db_permission.description = cfg_permission['description']
 
             current_app.logger.debug('Adding {} permission'.format(db_permission.name))
@@ -197,8 +237,8 @@ class Role(db.Model):
         lazy='dynamic')
 
     @staticmethod
-    def insert_roles():
-        Permission.insert_permissions()
+    def insert_cfg_roles():
+        Permission.insert_cfg_permissions()
         for cfg_role in current_app.config['ROLES']:
             current_app.logger.debug('adding role {}'.format(cfg_role['name']))
             try:
@@ -206,7 +246,7 @@ class Role(db.Model):
             except NoResultFound:
                 db_role = Role(
                     name=cfg_role.get('name'),
-                    description = cfg_role.get('description')
+                    description=cfg_role.get('description')
                 )
 
             for cfg_attr in cfg_role.keys():
@@ -220,7 +260,7 @@ class Role(db.Model):
                                     db_role.permissions.extend(Permission.query.filter_by(name=cfg_permission).all())
                             except NoResultFound as e:
                                 current_app.logger.exception('Failed on permission {} '.format(cfg_permission))
-                                sys.exit()
+                                raise
                         else:
                             setattr(db_role, cfg_attr, cfg_role.get(cfg_attr))
 
@@ -228,8 +268,5 @@ class Role(db.Model):
 
         db.session.commit()
 
-
-
     def __repr__(self):
         return '<Role %r>' % self.name
-
