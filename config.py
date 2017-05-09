@@ -33,6 +33,7 @@ class Config(object):
             'is_default': True
         }
     ]
+    USERS = []
 
     @staticmethod
     def init_app(app):
@@ -48,6 +49,23 @@ class DevelopmentConfig(Config):
     # SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
     #                           'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
     SQLALCHEMY_DATABASE_URI = 'postgresql://localhost/{}'.format(Config.PROJECT_NAME.lower())
+
+    USERS = [
+        {
+            'username': 'test_admin',
+            'email': 'testadmin@gmail.com',
+            'role': 'Admin',
+            'confirmed': True,
+            'password': 'test11'
+        },
+        {
+            'username': 'test_user',
+            'email': 'testuser@gmail.com',
+            'role': 'User',
+            'confirmed': True,
+            'password': 'test11'
+        }
+    ]
 
 
 class TestingConfig(Config):
