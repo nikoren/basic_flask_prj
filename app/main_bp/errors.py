@@ -8,7 +8,7 @@ from flask import render_template, request, jsonify
 @main_bp.app_errorhandler(404)
 def page_not_found(e):
 
-    # for rest apis construct and return JSON , otherwise flask use HTML by default
+    # for rest apis construct and return JSON , otherwise flask use HTML by default, checks the Accept request header
     if request.accept_mimetypes.accept_json and \
             not request.accept_mimetypes.accept_html:
         response = jsonify({'error': 'not found'})
