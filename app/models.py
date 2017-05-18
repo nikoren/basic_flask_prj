@@ -4,8 +4,19 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin, AnonymousUserMixin
 from . import login_manager
 from itsdangerous import TimedJSONWebSignatureSerializer
-from flask import current_app
+from flask import current_app, url_for
 from sqlalchemy.orm.exc import NoResultFound
+
+logger = current_app.logger
+
+
+class ValidationError(ValueError):
+    '''
+    Throw in case of request validation error
+    This can be used when some attributes that are expected in the body of request were not found
+
+    '''
+    pass
 
 
 class AnonymousUser(AnonymousUserMixin):
@@ -58,7 +69,7 @@ class User(UserMixin, db.Model):
             try:
                 db_role = Role.query.filter_by(name=cfg_user['role']).one()
             except NoResultFound as e:
-                current_app.logger.exception(
+                logger.exception(
                     'Could not add User {}, no such role in DB {}'.format(
                         cfg_user['name'], cfg_user['role']))
                 raise
@@ -67,7 +78,7 @@ class User(UserMixin, db.Model):
             try:
                 db_user = User.query.filter_by(username=cfg_user['username']).one()
             except NoResultFound:
-                current_app.logger.debug(
+                logger.debug(
                     'User {} is not in DB - creating it with {} and role {}'.format(
                         cfg_user['username'], cfg_user, db_role))
                 db_user = User(
@@ -81,7 +92,11 @@ class User(UserMixin, db.Model):
             for cfg_att_name in cfg_user.keys():
                 if not (cfg_att_name.startswith('_') or
                         cfg_att_name == 'role'):
-                    setattr(db_user, cfg_att_name, cfg_user[cfg_att_name])
+                    if getattr(db_user,cfg_att_name) != getattr(cfg_user, cfg_att_name):
+                        logger.debug('Updating user {}, setting {} to {}'.format(
+                        db_user.id, cfg_att_name, cfg_user[cfg_att_name])
+                        )
+                        setattr(db_user, cfg_att_name, cfg_user[cfg_att_name])
 
             db_user.role = db_role
             db_user.password = cfg_user['password']
