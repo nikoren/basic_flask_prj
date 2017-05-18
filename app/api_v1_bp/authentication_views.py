@@ -114,15 +114,3 @@ def get_token():
     )
 
 
-# To protect single route, the auth.login_required decorator can be used
-# but not required - as all routes protected on blueprint level
-@auth.login_required
-@permissions_required(['admin'])
-@api_v1_bp.route('/roles')
-def get_roles():
-    """
-    Sample route function - list available roles
-    :return:
-    """
-    roles = Role.query.all()
-    return jsonify({'roles': [role.name for role in roles]})
