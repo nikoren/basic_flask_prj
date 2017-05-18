@@ -2,9 +2,10 @@ from . import main_bp
 from . import forms
 from .. import models
 from .. import db
-from flask import session, redirect, flash, url_for, render_template
+from flask import session, redirect, flash, url_for, render_template, jsonify
 from flask_login import login_required
 from ..decorators import admin_required, permissions_required
+from sqlalchemy.orm.exc import NoResultFound
 
 @main_bp.route('/', methods=['GET'])
 def index():

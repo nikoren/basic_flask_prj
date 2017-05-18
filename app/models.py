@@ -15,9 +15,15 @@ class AnonymousUser(AnonymousUserMixin):
     '''
 
     def can(self, permissions):
+        '''
+        Method expected by flask-login
+        '''
         return False
 
     def is_admin(self):
+        '''
+        Method expected by flask-login
+        '''
         return False
 
 
