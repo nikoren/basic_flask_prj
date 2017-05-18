@@ -57,6 +57,28 @@ class User(UserMixin, db.Model):
                 self.role = Role.query.filter_by(name='Admin').first()
             if self.role is None:
                 self.role = Role.query.filter_by(default=True).first()
+            logger.debug('{} assigned to User {} '.format(self.role.name, self.email))
+
+    def to_json(self):
+        '''
+        Represent current user as dictionary
+
+        Representation of a resource offered to clients does not need to be identical
+        to the internal representation of the corresponding database model.
+
+        :return: dict: kye:value of most of user's attributes, some attributes are ommited for privacy
+            {usr_attr: usr_attr_value...}
+        '''
+        json_user = {
+            'username': self.username,
+            'id': self.id,
+            'email': self.email,
+            'confirmed': self.confirmed,
+            'role': url_for('api_bp.get_role', id=self.role.id, _external=True )
+        }
+        logger.debug('Json representation of user {} is {}'.format(self.email, json_user))
+        return json_user
+
 
     @staticmethod
     def insert_cfg_users():
