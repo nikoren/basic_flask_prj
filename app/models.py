@@ -190,6 +190,36 @@ class User(UserMixin, db.Model):
         if self.role.name == 'Admin':
             return True
 
+    def generate_auth_token(self, expiration):
+        """
+        Encodes user id into token token
+
+        :param expiration: time in seconds for token to expire
+        :return: token
+        """
+        s = TimedJSONWebSignatureSerializer(
+            current_app.config['SECRET_KEY'], expires_in=expiration)
+
+        return s.dumps({'id': self.id})
+
+    @staticmethod
+    def verify_auth_token(token):
+        """
+        Extracts user id from encoded token,
+
+        this methos is static, as there is no way to find our which user runs it until he authenticates himself
+
+        :param token: authentication token
+        :return: User id or None
+        """
+        s = TimedJSONWebSignatureSerializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except:
+            return None
+
+        return User.query.get(data.get('id'))
+
     def __repr__(self):
         return '<User %r>' % self.username
 
