@@ -1,4 +1,5 @@
 from flask import Blueprint
 
-api_v1_bp = Blueprint('api_v1_bp', __name__)
-from . import authentication, user, decorators
+api_bp = Blueprint('api_bp', __name__)
+# Associate view/models... with blueprint
+from . import authentication_views, user, decorators

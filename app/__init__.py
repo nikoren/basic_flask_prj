@@ -40,8 +40,8 @@ def create_app(config_name):
     from auth_bp import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
 
-    from api_v1_bp import api_v1_bp
-    app.register_blueprint(api_v1_bp, url_prefix='/api/v1')
+    from api_v1_bp import api_bp
+    app.register_blueprint(api_bp, url_prefix='/api/v1')
 
     return app
 
