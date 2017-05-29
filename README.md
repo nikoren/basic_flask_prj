@@ -11,13 +11,14 @@ This is basic project using bluiprints that has a lot of boring boilerplate buil
   - flask_migrate for alembic migrations
   
  - following models are implemented:
-   - user
-   - role
+   - users
+   - roles
+   - permissions
 
 - following app functionality is implemented:
   - authentication
-
-  
+  - authorization
+  - rest api 
 
 ### Getting started
 
