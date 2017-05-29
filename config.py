@@ -35,6 +35,8 @@ class Config(object):
     ]
     USERS = []
 
+    API_TOKEN_EXPIRATION_SECONDS = 3600
+    API_USERS_PER_PAGE = 5
     @staticmethod
     def init_app(app):
         pass

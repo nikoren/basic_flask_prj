@@ -45,24 +45,36 @@ def verify_password(email_or_token, password):
     '''
 
     # No authentication method selected
+    current_app.logger.debug('Params are -  email_or_token:{}, password:{}'.format(email_or_token, password))
     if email_or_token == '':
         g.current_user = AnonymousUser()
+        current_app.logger.debug('g.current_user is anonymous - password verification failed')
         return False
 
     # Token authentication
     if password == '':
+        current_app.logger.debug('Password is empty - setting g.token_used to True')
         g.token_used = True
+        current_app.logger.debug('Trying to verify token..')
         g.current_user = User.verify_auth_token(email_or_token)
+        current_app.logger.debug('Current user loaded after token verification is {} , '
+                                 'should not be None or Anonymous'.format(g.current_user))
         return g.current_user is not None
 
     # Email/password authentication
+    current_app.logger.debug('Trying email authentication')
     try:
         user = User.query.filter_by(email=email_or_token).one()
     except NoResultFound:
+        current_app.logger.debug('Could not fetch user with email {}, '
+                                 'password verification failed'.format(email_or_token))
         g.current_user = AnonymousUser()
         return False
+    current_app.logger.debug('Loaded user {}'.format(user))
     g.current_user = user
-    g.token_used = True
+    g.token_used = False
+    current_app.logger.debug(
+        'Password verification status: {}'.format(user.password_is_correct(password)))
     return user.password_is_correct(password)
 
 
@@ -99,8 +111,14 @@ def get_token():
     :return:
     '''
 
+    current_app.logger.debug(
+        "g.current_user.is_anonymous: {}."
+        " g.token_used:{}".format(
+            g.current_user.is_anonymous,
+            g.token_used))
+
     # reject users that are trying to get token with no credentials or existing old token
-    if g.current_user.is_anonymous() \
+    if g.current_user.is_anonymous \
             or g.token_used:
         return RestApiErrors.unauthorized_401('Invalid credentials')
 

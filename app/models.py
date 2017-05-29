@@ -6,8 +6,7 @@ from . import login_manager
 from itsdangerous import TimedJSONWebSignatureSerializer
 from flask import current_app, url_for
 from sqlalchemy.orm.exc import NoResultFound
-
-logger = current_app.logger
+from .utils import split_url
 
 
 class ValidationError(ValueError):
@@ -56,10 +55,10 @@ class User(UserMixin, db.Model):
             if self.email in current_app.config['ADMINS']:
                 self.role = Role.query.filter_by(name='Admin').first()
             if self.role is None:
-                self.role = Role.query.filter_by(default=True).first()
-            logger.debug('{} assigned to User {} '.format(self.role.name, self.email))
+                self.role = Role.query.filter_by(is_default=True).first()
+            current_app.logger.debug('{} assigned to User {} '.format(self.role.name, self.email))
 
-    def to_json(self):
+    def export_to_dict(self):
         '''
         Represent current user as dictionary
 
@@ -69,16 +68,53 @@ class User(UserMixin, db.Model):
         :return: dict: kye:value of most of user's attributes, some attributes are ommited for privacy
             {usr_attr: usr_attr_value...}
         '''
-        json_user = {
-            'username': self.username,
+        export_to_dictd_user = {
             'id': self.id,
+            'self_url': self.url,
+            'username': self.username,
             'email': self.email,
             'confirmed': self.confirmed,
-            'role': url_for('api_bp.get_role', id=self.role.id, _external=True )
+            'role': self.role.url
         }
-        logger.debug('Json representation of user {} is {}'.format(self.email, json_user))
-        return json_user
+        return export_to_dictd_user
 
+    def import_from_dict(self, user_dict):
+        '''
+        Get user from Dictionary, can be used for extracting user from JSON/XML...
+
+        :param user_dict:  Dictionary
+        :return: User(self)
+        '''
+
+        #role url
+        if 'role' in user_dict:
+            endpoint, args = split_url(user_dict['role'])
+            if endpoint != 'api_bp.get_role' or 'id' not in args:
+                raise ValidationError("Invalid role URL: {}".format(user_dict['role']))
+
+            # role id
+            try:
+                self.role = Role.query.filter_by(id=(args['id'])).one()
+            except NoResultFound as e:
+                raise ValidationError('Invalid role id {}: {}'.format(args['id'], e.args[0]))
+
+        try:
+            self.username = user_dict['username']
+            self.email = user_dict['email']
+        except KeyError as e:
+            raise ValidationError('Invalid User: missing requiered args {}'.format(e.args[0]))
+
+        # confirmed is optional
+        if 'confirmed' in user_dict:
+            self.confirmed = user_dict['confirmed'] == 'true'
+
+        return self
+
+
+
+    @property
+    def url(self):
+        return url_for('api_bp.get_user', id=self.id, _external=True)
 
     @staticmethod
     def insert_cfg_users():
@@ -91,7 +127,7 @@ class User(UserMixin, db.Model):
             try:
                 db_role = Role.query.filter_by(name=cfg_user['role']).one()
             except NoResultFound as e:
-                logger.exception(
+                current_app.logger.exception(
                     'Could not add User {}, no such role in DB {}'.format(
                         cfg_user['name'], cfg_user['role']))
                 raise
@@ -100,7 +136,7 @@ class User(UserMixin, db.Model):
             try:
                 db_user = User.query.filter_by(username=cfg_user['username']).one()
             except NoResultFound:
-                logger.debug(
+                current_app.logger.debug(
                     'User {} is not in DB - creating it with {} and role {}'.format(
                         cfg_user['username'], cfg_user, db_role))
                 db_user = User(
@@ -115,7 +151,7 @@ class User(UserMixin, db.Model):
                 if not (cfg_att_name.startswith('_') or
                         cfg_att_name == 'role'):
                     if getattr(db_user,cfg_att_name) != getattr(cfg_user, cfg_att_name):
-                        logger.debug('Updating user {}, setting {} to {}'.format(
+                        current_app.logger.debug('Updating user {}, setting {} to {}'.format(
                         db_user.id, cfg_att_name, cfg_user[cfg_att_name])
                         )
                         setattr(db_user, cfg_att_name, cfg_user[cfg_att_name])
@@ -153,18 +189,18 @@ class User(UserMixin, db.Model):
         s = TimedJSONWebSignatureSerializer(current_app.config['SECRET_KEY'])
         try:
             token = s.loads(token)
-            current_app.logger.debug('Token loaded: {}'.format(token))
+            current_app.current_app.logger.debug('Token loaded: {}'.format(token))
         except Exception:
-            current_app.logger.exception("Couldn't load the token")
+            current_app.current_app.logger.exception("Couldn't load the token")
             return False
 
         if token.get('id') == self.id:
-            current_app.logger.debug('Token id match users id')
+            current_app.current_app.logger.debug('Token id match users id')
             self.confirmed = True
             db.session.add(self)
-            current_app.logger.debug('User {} confirmed'.format(self))
+            current_app.current_app.logger.debug('User {} confirmed'.format(self))
             return True
-        current_app.logger.warning("Token {} doesnt't match 'id:{}'".format(token, self.id))
+        current_app.current_app.logger.warning("Token {} doesnt't match 'id:{}'".format(token, self.id))
         return False
 
     def can(self, permissions):
@@ -179,7 +215,7 @@ class User(UserMixin, db.Model):
                 try:
                     permission = Permission.query.filter_by(name=permission).one()
                 except NoResultFound as e:
-                    current_app.logger.debug('No such permission {}, exiting'.format(permission))
+                    current_app.current_app.logger.debug('No such permission {}, exiting'.format(permission))
                     return False
             if permission.name not in \
                     [p.name for p in self.role.permissions]:
@@ -216,9 +252,11 @@ class User(UserMixin, db.Model):
         try:
             data = s.loads(token)
         except:
+            current_app.logger.debug('Could not load token, token verification failed - returning None')
             return None
 
-        return User.query.get(data.get('id'))
+        current_app.logger.debug('Loaded token data is {}'.format(data))
+        return User.query.get(data['id'])
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -258,6 +296,19 @@ class Permission(db.Model):
         back_populates='permissions',
     )
 
+    def export_to_dict(self):
+        return {
+            'id': self.id,
+            'self_url': self.url,
+            'name': self.name,
+            'description': self.description,
+            'roles': [role.url for role in self.roles]
+        }
+
+    @property
+    def url(self):
+        return url_for('api_bp.get_permission', id=self.id, _external=True)
+
     @staticmethod
     def insert_cfg_permissions():
         cfg_permissions = current_app.config['PERMISSIONS']
@@ -277,10 +328,10 @@ class Permission(db.Model):
                 and cfg_permission.get('description') != db_permission.description):
                 db_permission.description = cfg_permission['description']
 
-            current_app.logger.debug('Adding {} permission'.format(db_permission.name))
+            current_app.current_app.logger.debug('Adding {} permission'.format(db_permission.name))
             db.session.merge(db_permission)
 
-        current_app.logger.debug('finished adding all permissions')
+        current_app.current_app.logger.debug('finished adding all permissions')
         db.session.commit()
 
     def __repr__(self):
@@ -309,11 +360,33 @@ class Role(db.Model):
         back_populates='role',
         lazy='dynamic')
 
+
+    def export_to_dict(self):
+        '''
+        Helper method that represent user as dictionary,
+        this can be used later for converting to XML/JSON...
+
+        :return: dict{role_attr:value,...}
+
+        '''
+        return {
+            'id': self.id,
+            'self_url': self.url,
+            'name': self.name,
+            'description': self.description,
+            'is_default': self.is_default,
+            'permissions': [p.url for p in self.permissions],
+            'users': [u.url for u in self.users]}
+
+    @property
+    def url(self):
+        return url_for('api_bp.get_role', id=self.id, _external=True)
+
     @staticmethod
     def insert_cfg_roles():
         Permission.insert_cfg_permissions()
         for cfg_role in current_app.config['ROLES']:
-            current_app.logger.debug('adding role {}'.format(cfg_role['name']))
+            current_app.current_app.logger.debug('adding role {}'.format(cfg_role['name']))
             try:
                 db_role = Role.query.filter_by(name=cfg_role.get('name')).one()
             except NoResultFound:
@@ -323,7 +396,7 @@ class Role(db.Model):
                 )
 
             for cfg_attr in cfg_role.keys():
-                current_app.logger.debug('cfg_attr is {}'.format(cfg_attr))
+                current_app.current_app.logger.debug('cfg_attr is {}'.format(cfg_attr))
                 if not cfg_attr.startswith('_'):
                     if getattr(db_role, cfg_attr) != cfg_role.get(cfg_attr):
                         if cfg_attr == 'permissions':
@@ -332,7 +405,7 @@ class Role(db.Model):
                                 for cfg_permission in cfg_role['permissions']:
                                     db_role.permissions.extend(Permission.query.filter_by(name=cfg_permission).all())
                             except NoResultFound as e:
-                                current_app.logger.exception('Failed on permission {} '.format(cfg_permission))
+                                current_app.current_app.logger.exception('Failed on permission {} '.format(cfg_permission))
                                 raise
                         else:
                             setattr(db_role, cfg_attr, cfg_role.get(cfg_attr))

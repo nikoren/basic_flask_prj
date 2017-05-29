@@ -2,7 +2,6 @@ from flask import jsonify
 
 
 
-
 class RestApiErrors(object):
     """
     This class implements all the helper functions for API errors
