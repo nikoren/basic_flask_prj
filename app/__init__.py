@@ -21,9 +21,11 @@ db = SQLAlchemy()
 
 
 def create_app(config_name):
+    # create app instance
     app = Flask(__name__)
     app.config.from_object(config[config_name])
 
+    # initialize all extensions - extension specific to any BP should be initialized in BP itself(e.g HTTPAuth)
     config[config_name].init_app(app)
     bootstrap.init_app(app)
     db.init_app(app)
@@ -37,6 +39,9 @@ def create_app(config_name):
 
     from auth_bp import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
+
+    from api_v1_bp import api_bp
+    app.register_blueprint(api_bp, url_prefix='/api/v1')
 
     return app
 

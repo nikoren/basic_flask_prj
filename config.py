@@ -8,9 +8,35 @@ class Config(object):
     MAIL_SUBJECT_PREFIX = '[{}]'.format(PROJECT_NAME)
     MAIL_SENDER = '{} Admin'.format(PROJECT_NAME)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    ADMIN = os.environ.get('{}_ADMIN'.format(PROJECT_NAME)) or 'nikoren@gmail.com'
+    ADMINS = os.environ.get('{}_ADMINS'.format(PROJECT_NAME)) or ['nikoren@gmail.com',]
+    PERMISSIONS = [
+        {
+            'name': 'admin',
+            'description': 'Provides access to following actions: All actions'
+        },
+        {
+            'name': 'read',
+            'description': 'Provides basic access to read the information'
+        }
+    ]
+    ROLES = [
+        {
+            'name': 'Admin',
+            'description': 'Role assigned to site administrator and provides full access to all features',
+            'permissions': ['admin', 'read'],
+            'is_default': False
+        },
+        {
+            'name': 'User',
+            'description': 'Default roole assigned to basic user',
+            'permissions': ['read'],
+            'is_default': True
+        }
+    ]
+    USERS = []
 
-
+    API_TOKEN_EXPIRATION_SECONDS = 3600
+    API_USERS_PER_PAGE = 5
     @staticmethod
     def init_app(app):
         pass
@@ -22,8 +48,26 @@ class DevelopmentConfig(Config):
     MAIL_USE_TLS = True
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME') or 'nikoren2safari'
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD') or 'safari11safari@'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-                              'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
+    # SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
+    #                           'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
+    SQLALCHEMY_DATABASE_URI = 'postgresql://localhost/{}'.format(Config.PROJECT_NAME.lower())
+
+    USERS = [
+        {
+            'username': 'test_admin',
+            'email': 'testadmin@gmail.com',
+            'role': 'Admin',
+            'confirmed': True,
+            'password': 'test11'
+        },
+        {
+            'username': 'test_user',
+            'email': 'testuser@gmail.com',
+            'role': 'User',
+            'confirmed': True,
+            'password': 'test11'
+        }
+    ]
 
 
 class TestingConfig(Config):
