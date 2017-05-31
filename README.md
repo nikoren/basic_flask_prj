@@ -1,6 +1,6 @@
 # Basic flask project
 
-This is basic project using bluiprints that has a lot of boring boilerplate built in, the idea is to build project with most social application features already implemented to make it easier starting  new projects.
+This is basic [Flask](http://flask.pocoo.org/) project using blueprint that has a lot of boring boilerplate built in, the idea is to build project with most social application features already implemented or at leas have single example to make it easier starting  new projects.
 
 - currently following extensions are integrated:
   - flask_admin for authentication
@@ -10,7 +10,7 @@ This is basic project using bluiprints that has a lot of boring boilerplate buil
   - flask_bootsrap as frontend framework
   - flask_migrate for alembic migrations
   
- - following models are implemented:
+ - implemented models:
    - users
    - roles
    - permissions
@@ -19,6 +19,15 @@ This is basic project using bluiprints that has a lot of boring boilerplate buil
   - authentication
   - authorization
   - rest api 
+  
+### Configuration `config.py`
+- Main db is Postgresql , sqlite is not fully supports all the features but can be used for basic setup
+
+```python
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
+                               'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
+    SQLALCHEMY_DATABASE_URI = 'postgresql://localhost/{}'.format(Config.PROJECT_NAME.lower())
+```
 
 ### Getting started
 
@@ -27,5 +36,9 @@ This is basic project using bluiprints that has a lot of boring boilerplate buil
 pip install -r requirements.txt
 python manage.py shell 
 db.create_all()
-python manage.py runserver
+╰─$ python manage.py runserver
+ * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+ * Restarting with stat
+ * Debugger is active!
+
 ```
