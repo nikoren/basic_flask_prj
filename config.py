@@ -34,6 +34,8 @@ class Config(object):
         }
     ]
     USERS = []
+    CELERY_BROKER_URL = 'redis://10.0.99.10:6379/0'
+    CELERY_RESULT_BACKEND = 'redis://10.0.99.10:6379/0'
 
     API_TOKEN_EXPIRATION_SECONDS = 3600
     API_USERS_PER_PAGE = 5

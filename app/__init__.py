@@ -2,10 +2,11 @@ from flask import Flask
 from flask_script import Manager
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
-from config import config
 from flask_login import LoginManager
 from flask_mail import Mail
 
+from celery import Celery
+from config import config, Config
 
 mail = Mail()
 
@@ -18,7 +19,7 @@ bootstrap = Bootstrap()
 manager = Manager()
 
 db = SQLAlchemy()
-
+celery = Celery(__name__, broker=Config.CELERY_BROKER_URL)
 
 def create_app(config_name):
     # create app instance
@@ -32,6 +33,7 @@ def create_app(config_name):
     login_manager.init_app(app)
     # moment.init_app(app)
     mail.init_app(app)
+    celery.conf.update(app.config)
 
     # Attach routes and custom errors here
     from main_bp import main_bp
