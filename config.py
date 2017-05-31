@@ -71,7 +71,9 @@ class DevelopmentConfig(Config):
 
 
 class TestingConfig(Config):
-    TESTING = True
+    TESTING = True  # Disable the error catching during request handling so that you get better error reports when performing test requests against the application.
+    DEBUG = False
+
     SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
                               'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
 class ProductionConfig(Config):
@@ -84,4 +86,5 @@ config = {
     'production': ProductionConfig,
     'default': DevelopmentConfig
 }
+
 
