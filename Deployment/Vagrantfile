@@ -1,0 +1,38 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+  config.vm.provider "virtualbox" do |v|
+    v.memory = 1024
+    v.cpus = 1  end
+
+  config.vm.box = "bento/ubuntu-16.04"
+  config.vm.network :private_network, ip: "10.0.99.10"
+  config.vm.synced_folder "~/FLASK/basic_flask_prj", "/code"
+
+  config.vm.provision "shell", inline: <<-REQUIREMENTS
+     apt-get update
+     apt-get install -y unzip htop
+     apt install -y python-pip
+     pip install virtualenv
+     apt-get install -y libffi-dev
+     apt-get install -y build-essential gfortran libatlas-base-dev python-pip python-dev
+     apt-get install -y libfreetype6-dev libpng-dev
+     apt-get install -y swig
+     apt-get install -y libxml2-dev libxslt1-dev
+     apt-get install -y freetds-dev
+     apt-get install -y libmemcached-dev
+     apt-get install -y libpq-dev
+     apt-get install -y libleveldb-dev
+     apt-get install -y golang # To build some utils
+     pip install ansible
+     pip install docopt
+     pip install requests
+     sudo locale-gen en_CA.UTF-8
+     apt-get install tmux
+     mkdir /venv
+     cd /venv && virtualenv default
+     cd /venv && source default/bin/activate && pip install -r /code/requirements.txt
+  REQUIREMENTS
+end
