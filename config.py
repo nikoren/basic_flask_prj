@@ -47,7 +47,7 @@ class DevelopmentConfig(Config):
     MAIL_PORT = 587
     MAIL_USE_TLS = True
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME') or 'nikoren2safari'
-    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD') or 'safari11safari@'
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     # SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
     #                           'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
     SQLALCHEMY_DATABASE_URI = 'postgresql://localhost/{}'.format(Config.PROJECT_NAME.lower())
@@ -71,7 +71,9 @@ class DevelopmentConfig(Config):
 
 
 class TestingConfig(Config):
-    TESTING = True
+    TESTING = True  # Disable the error catching during request handling so that you get better error reports when performing test requests against the application.
+    DEBUG = False
+
     SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
                               'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
 class ProductionConfig(Config):
@@ -84,4 +86,5 @@ config = {
     'production': ProductionConfig,
     'default': DevelopmentConfig
 }
+
 

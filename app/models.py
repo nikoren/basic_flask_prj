@@ -56,7 +56,7 @@ class User(UserMixin, db.Model):
                 self.role = Role.query.filter_by(name='Admin').first()
             if self.role is None:
                 self.role = Role.query.filter_by(is_default=True).first()
-            current_app.logger.debug('{} assigned to User {} '.format(self.role.name, self.email))
+            current_app.logger.debug('{} role assigned to User {} '.format(self.role.name, self.email))
 
     def export_to_dict(self):
         '''
@@ -68,7 +68,7 @@ class User(UserMixin, db.Model):
         :return: dict: kye:value of most of user's attributes, some attributes are ommited for privacy
             {usr_attr: usr_attr_value...}
         '''
-        export_to_dictd_user = {
+        export_to_dict_user = {
             'id': self.id,
             'self_url': self.url,
             'username': self.username,
@@ -76,7 +76,7 @@ class User(UserMixin, db.Model):
             'confirmed': self.confirmed,
             'role': self.role.url
         }
-        return export_to_dictd_user
+        return export_to_dict_user
 
     def import_from_dict(self, user_dict):
         '''
@@ -189,18 +189,18 @@ class User(UserMixin, db.Model):
         s = TimedJSONWebSignatureSerializer(current_app.config['SECRET_KEY'])
         try:
             token = s.loads(token)
-            current_app.current_app.logger.debug('Token loaded: {}'.format(token))
+            current_app.logger.debug('Token loaded: {}'.format(token))
         except Exception:
-            current_app.current_app.logger.exception("Couldn't load the token")
+            current_app.logger.exception("Couldn't load the token")
             return False
 
         if token.get('id') == self.id:
-            current_app.current_app.logger.debug('Token id match users id')
+            current_app.logger.debug('Token id match users id')
             self.confirmed = True
             db.session.add(self)
-            current_app.current_app.logger.debug('User {} confirmed'.format(self))
+            current_app.logger.debug('User {} confirmed'.format(self))
             return True
-        current_app.current_app.logger.warning("Token {} doesnt't match 'id:{}'".format(token, self.id))
+        current_app.logger.warning("Token {} doesnt't match 'id:{}'".format(token, self.id))
         return False
 
     def can(self, permissions):
@@ -215,7 +215,7 @@ class User(UserMixin, db.Model):
                 try:
                     permission = Permission.query.filter_by(name=permission).one()
                 except NoResultFound as e:
-                    current_app.current_app.logger.debug('No such permission {}, exiting'.format(permission))
+                    current_app.logger.debug('No such permission {}, exiting'.format(permission))
                     return False
             if permission.name not in \
                     [p.name for p in self.role.permissions]:
@@ -328,10 +328,10 @@ class Permission(db.Model):
                 and cfg_permission.get('description') != db_permission.description):
                 db_permission.description = cfg_permission['description']
 
-            current_app.current_app.logger.debug('Adding {} permission'.format(db_permission.name))
+            current_app.logger.debug('Adding {} permission'.format(db_permission.name))
             db.session.merge(db_permission)
 
-        current_app.current_app.logger.debug('finished adding all permissions')
+        current_app.logger.debug('finished adding all permissions')
         db.session.commit()
 
     def __repr__(self):
@@ -386,7 +386,7 @@ class Role(db.Model):
     def insert_cfg_roles():
         Permission.insert_cfg_permissions()
         for cfg_role in current_app.config['ROLES']:
-            current_app.current_app.logger.debug('adding role {}'.format(cfg_role['name']))
+            current_app.logger.debug('adding role {}'.format(cfg_role['name']))
             try:
                 db_role = Role.query.filter_by(name=cfg_role.get('name')).one()
             except NoResultFound:
@@ -396,7 +396,7 @@ class Role(db.Model):
                 )
 
             for cfg_attr in cfg_role.keys():
-                current_app.current_app.logger.debug('cfg_attr is {}'.format(cfg_attr))
+                # current_app.logger.debug('cfg_attr is {}'.format(cfg_attr))
                 if not cfg_attr.startswith('_'):
                     if getattr(db_role, cfg_attr) != cfg_role.get(cfg_attr):
                         if cfg_attr == 'permissions':
@@ -405,7 +405,7 @@ class Role(db.Model):
                                 for cfg_permission in cfg_role['permissions']:
                                     db_role.permissions.extend(Permission.query.filter_by(name=cfg_permission).all())
                             except NoResultFound as e:
-                                current_app.current_app.logger.exception('Failed on permission {} '.format(cfg_permission))
+                                current_app.logger.exception('Failed on permission {} '.format(cfg_permission))
                                 raise
                         else:
                             setattr(db_role, cfg_attr, cfg_role.get(cfg_attr))
