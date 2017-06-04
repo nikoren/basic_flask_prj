@@ -1,6 +1,6 @@
 from . import main_bp
-
-from flask import render_template, request, jsonify
+from flask import render_template, request, jsonify, current_app
+from ..api_errors import RestApiErrors
 
 # if the errorhandler decorator is used, the handler will only be invoked for errors
 # that originate in the blueprint.
@@ -11,9 +11,10 @@ def page_not_found(e):
     # for rest apis construct and return JSON , otherwise flask use HTML by default, checks the Accept request header
     if request.accept_mimetypes.accept_json and \
             not request.accept_mimetypes.accept_html:
-        response = jsonify({'error': 'not found'})
-        response.status_code = 404
-        return response
+            return RestApiErrors.not_found_404(e.description)
+
+    current_app.logger.debug('accept_json: {}, accept_html: {}'.format(
+        request.accept_mimetypes.accept_html, request.accept_mimetypes.accept_html))
 
     return render_template('404.html'), 404
 

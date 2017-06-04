@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import jsonify, request, abort
 from authentication_views import auth
 from . import api_bp
 from ..decorators import permissions_required
@@ -26,7 +26,10 @@ from errors import RestApiErrors
 @permissions_required(['admin'])
 @api_bp.route('/users/<int:id>', methods=['GET'])
 def get_user(id):
-    user = models.User.query.get_or_404(id)
+    try:
+        user = models.User.query.filter_by(id=id).one()
+    except NoResultFound as e:
+        abort(404)
     return jsonify(user.export_to_dict())
 
 
