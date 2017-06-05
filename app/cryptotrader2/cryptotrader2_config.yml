@@ -1,0 +1,20 @@
+exchanges:
+  Bit2c:
+    client:
+      base_url: https://bit2c.co.il
+      url_paths:
+        exchanges: Exchanges
+        orders: Order
+      relevant_pairs:
+        BTN_NIS: 0
+        LTC_BTC: 1
+        LTC_NIS: 2
+    parser:
+      headers:
+        ll: lastprice
+        av: last24hourspriceavarage,
+        a: last24hoursvolume
+        h: highestBid
+        l: lowestAsk
+
+
