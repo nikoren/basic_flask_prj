@@ -56,7 +56,6 @@ class User(UserMixin, db.Model):
                 self.role = Role.query.filter_by(name='Admin').first()
             if self.role is None:
                 self.role = Role.query.filter_by(is_default=True).first()
-            current_app.logger.debug('{} role assigned to User {} '.format(self.role.name, self.email))
 
     def export_to_dict(self):
         '''
@@ -136,9 +135,6 @@ class User(UserMixin, db.Model):
             try:
                 db_user = User.query.filter_by(username=cfg_user['username']).one()
             except NoResultFound:
-                current_app.logger.debug(
-                    'User {} is not in DB - creating it with {} and role {}'.format(
-                        cfg_user['username'], cfg_user, db_role))
                 db_user = User(
                     username=cfg_user['username'],
                     email=cfg_user['email'],
@@ -151,9 +147,6 @@ class User(UserMixin, db.Model):
                 if not (cfg_att_name.startswith('_') or
                         cfg_att_name == 'role'):
                     if getattr(db_user,cfg_att_name) != getattr(cfg_user, cfg_att_name):
-                        current_app.logger.debug('Updating user {}, setting {} to {}'.format(
-                        db_user.id, cfg_att_name, cfg_user[cfg_att_name])
-                        )
                         setattr(db_user, cfg_att_name, cfg_user[cfg_att_name])
 
             db_user.role = db_role
@@ -189,18 +182,14 @@ class User(UserMixin, db.Model):
         s = TimedJSONWebSignatureSerializer(current_app.config['SECRET_KEY'])
         try:
             token = s.loads(token)
-            current_app.logger.debug('Token loaded: {}'.format(token))
         except Exception:
             current_app.logger.exception("Couldn't load the token")
             return False
 
         if token.get('id') == self.id:
-            current_app.logger.debug('Token id match users id')
             self.confirmed = True
             db.session.add(self)
-            current_app.logger.debug('User {} confirmed'.format(self))
             return True
-        current_app.logger.warning("Token {} doesnt't match 'id:{}'".format(token, self.id))
         return False
 
     def can(self, permissions):
@@ -215,7 +204,6 @@ class User(UserMixin, db.Model):
                 try:
                     permission = Permission.query.filter_by(name=permission).one()
                 except NoResultFound as e:
-                    current_app.logger.debug('No such permission {}, exiting'.format(permission))
                     return False
             if permission.name not in \
                     [p.name for p in self.role.permissions]:
@@ -252,10 +240,8 @@ class User(UserMixin, db.Model):
         try:
             data = s.loads(token)
         except:
-            current_app.logger.debug('Could not load token, token verification failed - returning None')
             return None
 
-        current_app.logger.debug('Loaded token data is {}'.format(data))
         return User.query.get(data['id'])
 
     def __repr__(self):
@@ -327,11 +313,7 @@ class Permission(db.Model):
             if (cfg_permission.get('description') is not None
                 and cfg_permission.get('description') != db_permission.description):
                 db_permission.description = cfg_permission['description']
-
-            current_app.logger.debug('Adding {} permission'.format(db_permission.name))
             db.session.merge(db_permission)
-
-        current_app.logger.debug('finished adding all permissions')
         db.session.commit()
 
     def __repr__(self):
@@ -386,7 +368,6 @@ class Role(db.Model):
     def insert_cfg_roles():
         Permission.insert_cfg_permissions()
         for cfg_role in current_app.config['ROLES']:
-            current_app.logger.debug('adding role {}'.format(cfg_role['name']))
             try:
                 db_role = Role.query.filter_by(name=cfg_role.get('name')).one()
             except NoResultFound:
@@ -396,7 +377,6 @@ class Role(db.Model):
                 )
 
             for cfg_attr in cfg_role.keys():
-                # current_app.logger.debug('cfg_attr is {}'.format(cfg_attr))
                 if not cfg_attr.startswith('_'):
                     if getattr(db_role, cfg_attr) != cfg_role.get(cfg_attr):
                         if cfg_attr == 'permissions':
@@ -409,9 +389,7 @@ class Role(db.Model):
                                 raise
                         else:
                             setattr(db_role, cfg_attr, cfg_role.get(cfg_attr))
-
             db.session.merge(db_role)
-
         db.session.commit()
 
     def __repr__(self):

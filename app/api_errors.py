@@ -34,10 +34,10 @@ class RestApiErrors(object):
         """
         404 Not found - The resource referenced in the URL was not found.
 
-        :param message:  Message to return to client
         """
         response = jsonify({'error': 'not found', 'message': message})
         response.status_code = 404
+        return response
 
     @staticmethod
     def not_allowed_405(message):
@@ -48,6 +48,7 @@ class RestApiErrors(object):
         """
         response = jsonify({'error': 'not allowed', 'message': message})
         response.status_code = 405
+        return response
 
     @staticmethod
     def internal_server_error_500(message):
@@ -58,4 +59,4 @@ class RestApiErrors(object):
         """
         response = jsonify({'error': 'internal server error', 'message': message})
         response.status_code = 500
-
+        return response

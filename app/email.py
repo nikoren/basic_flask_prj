@@ -1,7 +1,8 @@
 from flask_mail import Message
-from . import mail
 from flask import current_app, render_template
 from threading import Thread
+from . import mail, celery
+
 
 def send_async_email(msg, app):
     '''
@@ -17,6 +18,9 @@ def send_async_email(msg, app):
     with app.app_context():
         mail.send(msg)
 
+@celery.task
+def send_async_celery_email(msg):
+    mail.send(msg)
 
 def send_email(to_email_address, subject, template, **kwargs):
     '''
@@ -45,9 +49,14 @@ def send_email(to_email_address, subject, template, **kwargs):
     msg.body = render_template(template + '.txt', **kwargs)  # for email kwargs expected to have token and user objects
     msg.html = render_template(template + '.html', **kwargs) # for email kwargs expected to have token and user objects
 
-    # Send the message via thread
-    app = current_app._get_current_object()
+    if kwargs.get('use_thread'):
+        # Send the message via thread
+        app = current_app._get_current_object()
 
-    email_thread = Thread(target=send_async_email, args=[msg, app])
-    email_thread.start()
+        email_thread = Thread(target=send_async_email, args=[msg, app])
+        email_thread.start()
+
+    if kwargs.get('use_celery'):
+        send_async_celery_email.delay(msg)
+
 

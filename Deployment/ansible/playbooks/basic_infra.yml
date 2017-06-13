@@ -1,0 +1,10 @@
+- name: Install redis
+  hosts: redis
+  roles:
+    - { role: DavidWittman.redis, become: yes}
+
+- name: Install postgres
+  hosts: postgres
+  roles:
+    - {role: geerlingguy.postgresql, become: yes}
+
